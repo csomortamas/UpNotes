@@ -1,0 +1,237 @@
+﻿@page "/viewnote/{noteId:int}"
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+
+@if (note == null || comments == null)
+{
+	<MudText Typo="Typo.h5">Jegyzet betöltése...</MudText>
+}
+else
+{
+	<MudGrid>
+		<MudItem xs="12" xl="8">
+			<MudCard Elevation="1" Class="pa-3">
+				@((MarkupString)Markdig.Markdown.ToHtml(note.Content))
+			</MudCard>
+			<AuthorizeView>
+				@if (context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value == note.UserId)
+				{
+					<MudContainer Class="pl-0 pt-3">
+						<MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Error" @onclick="() => HandleDeleteNoteClick(note)">Törlés</MudButton>
+						<MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="() => HandleEditNoteClick(note)">Módosítás</MudButton>
+					</MudContainer>
+				}
+			</AuthorizeView>
+		</MudItem>
+		<MudItem xs="12" xl="4">
+			<MudCard Class="py-1">
+				<MudGrid>
+					<MudItem xs="12">
+						<MudPaper Class="align-center justify-center mud-width-full" Elevation="0">
+							<MudText Typo="Typo.h5" Align="Align.Center">@note.Title</MudText>
+							<MudText Typo="Typo.h6" Align="Align.Center">@note.Major.Name </MudText>
+							<MudText Typo="Typo.h6" Align="Align.Center">@note.Subject.Name </MudText>
+
+							<MudText Typo="Typo.subtitle1" Align="Align.Center" @onclick="() => HandleUserPageClick(note)" Style="cursor: pointer">@note.UserId</MudText>
+							<MudText Typo="Typo.subtitle1" Align="Align.Center">@note.UploadDate.ToShortDateString() </MudText>
+							<MudText Typo="Typo.subtitle1" Align="Align.Center">@note.Rating / 5 </MudText>
+
+							<AuthorizeView>
+								<MudText Align="Align.Center">
+									<MudRating SelectedValueChanged="HandleRatingValueChanged" SelectedValue="@myRating" Class="mt-3" FullIcon="@Icons.Material.Filled.Favorite" EmptyIcon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Secondary" />
+									@if(@myRating != 0)
+									{
+										<MudIconButton Icon="@Icons.Material.Filled.Delete" aria-label="delete" OnClick="HandleDeleteRatingClick"></MudIconButton>
+									}
+								</MudText>
+							</AuthorizeView>
+						</MudPaper>
+					</MudItem>
+					<MudItem xs="12">
+						<MudPaper Elevation="0">
+							<MudText Typo="Typo.h5" Class="mb-3" Align="Align.Center">Hozzászólások</MudText>
+							@if (comments.Count == 0)
+							{
+								<MudText Typo="Typo.h6" Align="Align.Center">Még nincsenek hozzászólások...</MudText>
+							}
+							else
+							{
+								@foreach (var comment in comments)
+								{
+									<MudPaper Elevation="3" Class="ma-5 pa-2">
+										<MudPaper Class="d-flex align-center justify-start mud-width-full" Elevation="0">
+											<MudText Typo="Typo.body2" @onclick="() => HandleUserPageClick(note)" Style="cursor: pointer">@comment.UserId</MudText> &nbsp;•&nbsp;
+											<MudText Typo="Typo.body2">@comment.CommentDate.ToShortDateString() </MudText>
+										</MudPaper>
+										<MudPaper Elevation="0">
+											@((MarkupString)Markdig.Markdown.ToHtml(comment.Content))
+										</MudPaper>
+
+										<MudPaper Elevation="0">
+											<MudText>
+												@comment.LikeCount
+												@if(comment.LikeByLoggedInUser == "Like")
+												{
+													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Color="Color.Error" Style="font-size: 1rem; cursor: pointer" @onclick='() => DeleteLikeOrDislikeClick(comment)' />
+													@comment.DislikeCount
+													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Dislike")' />
+												} else if (comment.LikeByLoggedInUser == "Dislike")
+												{
+													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Like")' />
+													@comment.DislikeCount
+													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Color="Color.Error" Style="font-size: 1rem; cursor: pointer" @onclick='() => DeleteLikeOrDislikeClick(comment)' />
+												} else {
+													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Like")' />
+													@comment.DislikeCount
+													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Dislike")' />
+												}
+											</MudText>
+										</MudPaper>
+
+										<AuthorizeView>
+											@if (context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value == comment.UserId)
+											{
+												<MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Error" Class="mt-2" @onclick="() => HandleDeleteCommentClick(comment)">Törlés</MudButton>
+											}
+										</AuthorizeView>
+									</MudPaper>
+								}
+							}
+							<AuthorizeView Context="commentContext">
+								<MudPaper Elevation="3" Class="ma-5 pa-2">
+									<EditForm Model="@commentText" FormName="addComment" OnSubmit="HandleCommentSubmit">
+										<MudTextField T="string" Label="Komment hozzáadása" Variant="Variant.Filled" @bind-Value="@commentText" For="@(() => @commentText)" Lines="3" Class="mb-2" />
+										<MudCardActions>
+											<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success">Publikálás</MudButton>
+
+											@if (false)
+											{
+												<MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Error" Class="ml-3">Törlés</MudButton>
+											}
+										</MudCardActions>
+									</EditForm>
+								</MudPaper>
+							</AuthorizeView>
+						</MudPaper>
+					</MudItem>
+				</MudGrid>
+			</MudCard>
+		</MudItem>
+	</MudGrid>
+}
+
+
+@code {
+	[Parameter]
+	public int noteId { get; set; }
+
+	public const string Seperator = "• &nbsp;";
+
+	public string commentText { get; set; } = "";
+
+	public int myRating { get; set; } = 0;
+	// public int myLikes { get; set; } = 0;
+
+	ListItemNoteDto? note = null;
+	List<ListItemCommentDto>? comments = null;
+
+	protected override async Task OnInitializedAsync()
+	{
+		note = await Http.GetFromJsonAsync<ListItemNoteDto>($"https://localhost:7031/api/notes/full/{noteId}");
+
+		try {
+			myRating = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/ratings/{noteId}");
+		}
+		catch (Exception)
+		{
+			myRating = 0;
+		}
+
+		if (note == null) return;
+
+		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+	}
+
+	protected void HandleEditNoteClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"editnote/{note.Id}");
+	}
+
+	protected async void HandleRatingValueChanged(int value)
+	{
+		if (value == 0) return;
+
+		myRating = value;
+
+		AddRatingDto rating = new AddRatingDto(
+			noteId,
+			value
+		);
+
+		await Http.PostAsJsonAsync("https://localhost:7031/api/ratings", rating);
+	}
+
+	protected async void HandleDeleteRatingClick()
+	{
+		await Http.DeleteAsync($"https://localhost:7031/api/ratings/{noteId}");
+		myRating = 0;
+		StateHasChanged();
+	}
+
+	protected async void HandleDeleteNoteClick(ListItemNoteDto note)
+	{
+		await Http.DeleteAsync($"https://localhost:7031/api/notes/{note.Id}");
+		NavigationManager.NavigateTo("/");
+	}
+
+	protected async Task HandleCommentSubmit()
+	{
+		commentText = commentText.Trim();
+		if (commentText == "") return;
+		await Http.PostAsJsonAsync($"https://localhost:7031/api/comments/{noteId}", new InsertCommentDto(commentText, noteId));
+		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+		commentText = "";
+	}
+
+	protected void HandleUserPageClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"userpage/{note.UserId}");
+	}
+
+	protected async void AddLikeOrDislikeClick(ListItemCommentDto comment, string type)
+	{
+		try
+		{
+			await Http.PostAsJsonAsync($"https://localhost:7031/api/likes", new AddLikeOrDislikeDto(comment.Id, type));
+			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+			StateHasChanged();
+		} 
+		catch (Exception)
+		{
+			// redirect to login
+		}
+	}
+
+	protected async void DeleteLikeOrDislikeClick(ListItemCommentDto comment)
+	{
+		try
+		{
+			await Http.DeleteAsync($"https://localhost:7031/api/likes/{comment.Id}");
+			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+			StateHasChanged();
+		} catch (Exception)
+		{
+			// redirect to login
+		}
+	}
+
+	protected async void HandleDeleteCommentClick(ListItemCommentDto comment)
+	{
+		await Http.DeleteAsync($"https://localhost:7031/api/comments/{comment.Id}");
+		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+		StateHasChanged();
+	}
+}

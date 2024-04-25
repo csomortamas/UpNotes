@@ -1,0 +1,106 @@
+﻿@page "/admin/editsubject/{majorId:int}"
+@page "/admin/editsubject/{majorId:int}/{subjectId:int}"
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+@if(major != null)
+{
+	<MudText Typo="Typo.h4" Class="mb-3">@majorName</MudText>
+} else
+{
+	<MudText Typo="Typo.h4" Class="mb-3">Hmm...</MudText>
+}
+
+@if(mutableMajor != null)
+{
+	<EditForm Model="@mutableSubject" OnSubmit="UpdateOrAddSubject" FormName="editSubject">
+		<MudItem xs="12" sm="7">
+			<MudCard>
+				<MudCardContent>
+					<MudTextField Label="Név" Placeholder="Analízis 1" @bind-Value="@mutableSubject.Name" />
+					<MudNumericField HideSpinButtons="true" Label="Félév" Variant="Variant.Text"
+									 @bind-Value="mutableSubject.SemesterNumber" Min="0" Max="7" />
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success">@modifyOrAdd</MudButton>
+					@if (subjectId != null)
+					{
+						<MudButton @onclick="DeleteSubject" ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Error" Class="ml-3">Törlés</MudButton>
+					}
+				</MudCardActions>
+			</MudCard>
+		</MudItem>
+	</EditForm>
+}
+
+
+
+@code {
+	[Parameter]
+	public int majorId { get; set; }
+
+	[Parameter]
+	public int? subjectId { get; set; }
+
+	SubjectDto? subject;
+	MajorDto? major;
+
+	MutableMajorDto? mutableMajor;
+	MutableSubjectDto? mutableSubject = new MutableSubjectDto();
+
+	string majorName = "Hmm...";
+
+	string modifyOrAdd => subjectId == null ? "Hozzáadás" : "Módosítás";
+
+	// init page
+	protected override async Task OnInitializedAsync()
+	{
+		major = await Http.GetFromJsonAsync<MajorDto>($"https://localhost:7031/api/majors/{majorId}");
+
+		if (major != null)
+		{
+			majorName = major.Name;
+			mutableMajor = new MutableMajorDto(major);
+		}
+
+		if (subjectId != null)
+		{
+			subject = await Http.GetFromJsonAsync<SubjectDto>($"https://localhost:7031/api/subjects/{subjectId}");
+
+			if (subject == null)
+			{
+				NavigationManager.NavigateTo("/admin/managesubjects");
+			} else
+			{
+				mutableSubject = new MutableSubjectDto(subject);
+			}
+		}
+	}
+
+	// delete subject
+	async Task DeleteSubject()
+	{
+		if (subjectId != null)
+		{
+			await Http.DeleteAsync($"https://localhost:7031/api/subjects/{subjectId}");
+		}
+		NavigationManager.NavigateTo($"/admin/managesubjects");
+	}
+
+	// update or add subject
+	async Task UpdateOrAddSubject()
+	{
+		InsertSubjectDto insertSubject = new InsertSubjectDto(mutableSubject.Name, mutableSubject.SemesterNumber, majorId);
+
+		if (subjectId == null)
+		{
+			await Http.PostAsJsonAsync($"https://localhost:7031/api/subjects/", insertSubject);
+		}
+		else
+		{
+			await Http.PutAsJsonAsync($"https://localhost:7031/api/subjects/{subjectId}", insertSubject);
+		}
+		NavigationManager.NavigateTo($"/admin/managesubjects");
+	}
+}

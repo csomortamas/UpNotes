@@ -1,0 +1,71 @@
+﻿@page "/admin/managesubjects"
+@using Microsoft.AspNetCore.Authorization
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+@attribute [Authorize]
+
+@if(majors == null || !dataLoaded)
+{
+	<MudCard>
+		<MudCardContent>
+			<MudText>Egy pillanat és kész is</MudText>
+			<MudText Typo="Typo.body2">A szakok és tárgyak töltődnek...</MudText>
+		</MudCardContent>
+	</MudCard>
+} 
+else {
+	<MudGrid>
+		@foreach (var major in majors)
+		{
+			<MudItem xs="12" sm="12" md="6" xl="4">
+				<MudPaper Elevation="2" >
+					<MudText Typo="Typo.h5" Align="Align.Center" Class="pt-3 pb-3">@major.Name</MudText>
+					<MudDivider />
+					<MudSimpleTable Elevation="0" Style="overflow-x: auto;">
+						<thead>
+							<tr>
+								<th style="font-size: 17px"><b>Név</b></th>
+								<th style="font-size: 17px"><b>Félév</b></th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var subject in dict.GetValueOrDefault(major.Id))
+							{
+								<EditSubjectRow majorId="@major.Id" subjectId="@subject.Id" subjectName="@subject.Name" subjectSemester="@subject.SemesterNumber"/>
+							}
+						</tbody>
+					</MudSimpleTable>
+					<MudDivider />
+					<AddSubjectButton majorId="@major.Id"/>
+				</MudPaper>
+			</MudItem>
+		}
+	</MudGrid>
+}
+
+
+@code {
+	bool dataLoaded = false;
+	List<MajorDto>? majors = null;
+	Dictionary<int, List<SubjectDto>> dict = new Dictionary<int, List<SubjectDto>>();
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
+
+		if(majors == null) return;
+
+		foreach(var major in majors)
+		{
+			List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
+
+			if (subjects == null) continue;
+
+			dict.Add(major.Id, subjects);
+		}
+
+		dataLoaded = true;
+	}
+}

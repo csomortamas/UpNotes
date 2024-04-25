@@ -1,0 +1,190 @@
+﻿@page "/editnote/{noteId:int}"
+@page "/editnote"
+
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+
+@attribute [Authorize]
+
+@if(fetchedNote == null && noteId != null)
+{
+	<MudText Typo="Typo.h5">Jegyzet betöltése...</MudText>
+}
+else
+{
+	<AuthorizeView Context="userContext">
+		@if (fetchedNote != null && userContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value != fetchedNote.UserId)
+		{
+			<MudText Typo="Typo.h5">Nem a te jegyzeted...</MudText>
+		}
+		else
+		{
+			<MudGrid>
+				<MudItem xs="12">
+					<EditForm Model="@mutableNote" OnSubmit="HandleSubmit" FormName="editNote">
+						<MudTextField Label="Cím" Placeholder="Analízis 1 jegyzet" @bind-Value="@mutableNote.Title" />
+
+						<MudSelect Dense="true" T="string" Label="Szak" Variant="Variant.Filled" ValueChanged="HandleMajorChanged" Value="@pickedMajor">
+							@if (majors == null)
+							{
+								<MudSelectItem Value="@("Töltés")">Töltés...</MudSelectItem>
+							}
+							else
+							{
+								@foreach (var major in majors)
+								{
+									<MudSelectItem Value="@major.Id.ToString()">@major.Name</MudSelectItem>
+								}
+							}
+						</MudSelect>
+
+						@if (pickedMajor == "" || dict == null)
+						{
+							<MudSelect Dense="true" T="string" Label="Tárgy" Variant="Variant.Filled" Disabled="true" />
+						}
+						else
+						{
+							<MudSelect Dense="true" T="string" Label="Tárgy" Variant="Variant.Filled" @bind-Value="@pickedSubject">
+								@foreach (var subject in dict.GetValueOrDefault(int.Parse(pickedMajor)))
+								{
+									<MudSelectItem Value="@subject.Id.ToString()">@subject.Name</MudSelectItem>
+								}
+							</MudSelect>
+						}
+					</EditForm>
+				</MudItem>
+
+
+				<MudItem xs="12" sm="12" md="6" xl="6">
+					<MudPaper Elevation="2">
+						<MudTextField T="string" Label="Jegyzet írása" Variant="Variant.Outlined" @bind-Value="@mutableNote.Content" Lines="25" Immediate="true" />
+					</MudPaper>
+				</MudItem>
+
+
+				<MudItem xs="12" sm="12" md="6" xl="6" Class="mt-1">
+					<MudPaper Elevation="2" Class="pa-6">
+						<div>
+							@if (!string.IsNullOrWhiteSpace(mutableNote.Content))
+							{
+								<div>
+									@((MarkupString)Markdig.Markdown.ToHtml(mutableNote.Content))
+								</div>
+							}
+						</div>
+					</MudPaper>
+				</MudItem>
+			</MudGrid>
+
+			<MudCardActions Class="pl-0">
+				<MudButton @onclick="HandleSubmit" ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success">@modifyOrAdd</MudButton>
+
+				@if(@modifyOrAdd == "Módosítás")
+				{
+					<MudButton ButtonType="ButtonType.Button" Class="ml-2" Variant="Variant.Filled" Color="Color.Error" @onclick="() => HandleDeleteNoteClick(noteId ?? -1)">Törlés</MudButton>
+				}
+			</MudCardActions>
+		}
+	</AuthorizeView>
+}
+
+@code {
+	[Parameter]
+	public int? noteId { get; set; }
+
+	NoteDto? note;
+
+	NoteDto? fetchedNote;
+
+	MutableNoteDto? mutableNote;
+	MutableMajorDto? mutableMajor;
+	MutableSubjectDto? mutableSubject;
+
+	string modifyOrAdd => noteId == null ? "Hozzáadás" : "Módosítás";
+
+	Dictionary<int, List<SubjectDto>> dict = new Dictionary<int, List<SubjectDto>>();
+	bool dataLoaded = false;
+	List<MajorDto>? majors = null;
+	private string pickedMajor = "";
+	private string pickedSubject = "";
+
+	// init page
+	protected override async Task OnInitializedAsync()
+	{
+		mutableNote = new MutableNoteDto { Title = string.Empty, Content = string.Empty};
+
+		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
+
+		if (majors == null) return;
+
+		foreach (var major in majors)
+		{
+			List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
+
+			if (subjects == null) continue;
+
+			dict.Add(major.Id, subjects);
+		}
+
+		dataLoaded = true;
+
+		// load note if id is present
+		if (noteId != null)
+		{
+			fetchedNote = await Http.GetFromJsonAsync<NoteDto>($"https://localhost:7031/api/notes/{noteId}");
+
+			if (fetchedNote != null)
+			{
+				mutableNote = new MutableNoteDto(fetchedNote);
+
+				SubjectDto? pickedSubjectDto = await Http.GetFromJsonAsync<SubjectDto>($"https://localhost:7031/api/subjects/{fetchedNote.SubjectId}");
+
+				if (pickedSubjectDto != null)
+				{
+					pickedMajor = pickedSubjectDto.MajorId.ToString();
+					pickedSubject = fetchedNote.SubjectId.ToString();
+				}
+			}
+		}
+	}
+
+	// handle submit
+	async Task HandleSubmit()
+	{
+		if (mutableNote != null && mutableNote.Title != string.Empty && mutableNote.Content != string.Empty && pickedMajor != string.Empty && pickedSubject != string.Empty)
+		{
+			InsertNoteDto insertNote = new InsertNoteDto
+			(
+				mutableNote.Title,
+				mutableNote.Content,
+				int.Parse(pickedSubject)
+			);
+
+			if (noteId == null)
+			{
+				await Http.PostAsJsonAsync("https://localhost:7031/api/notes/", insertNote);
+			}
+			else
+			{
+				await Http.PutAsJsonAsync($"https://localhost:7031/api/notes/{noteId}", insertNote);
+			}
+
+			NavigationManager.NavigateTo("/");
+		}
+	}
+
+	protected async void HandleDeleteNoteClick(int noteId)
+	{
+		await Http.DeleteAsync($"https://localhost:7031/api/notes/{noteId}");
+		NavigationManager.NavigateTo("/");
+	}
+
+	protected void HandleMajorChanged(string major)
+	{
+		pickedMajor = major;
+		pickedSubject = "";
+	}
+}

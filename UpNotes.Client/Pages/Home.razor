@@ -1,0 +1,223 @@
+﻿@page "/"
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+
+
+<MudContainer>
+	<MudTextField DebounceInterval="300" OnDebounceIntervalElapsed="SearchAndFilter" @bind-Value="SearchTerm" Label="Keresés" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" />
+
+	<MudGrid>
+ 		<MudItem xs="6">
+			<MudSelect Dense="true" T="string" Label="Szak" Variant="Variant.Filled" ValueChanged="HandleMajorChanged" Value="@pickedMajor">
+				@if (majors == null)
+				{
+					<MudSelectItem Value="@("Töltés")">Töltés...</MudSelectItem>
+				}
+				else
+				{	
+					<MudSelectItem Value='"Összes"'></MudSelectItem>
+					@foreach (var major in majors)
+					{
+						<MudSelectItem Value="@major.Id.ToString()">@major.Name</MudSelectItem>
+					}
+				}
+			</MudSelect>
+		</MudItem>
+		<MudItem xs="6">
+			@if (pickedMajor == "" || dict == null)
+			{
+				<MudSelect Dense="true" T="string" Label="Tárgy" Variant="Variant.Filled" Disabled="true" />
+			}
+			else
+			{
+			<MudSelect Dense="true" T="string" Label="Tárgy" Variant="Variant.Filled" ValueChanged="HandleSubjectChanged" Value="@pickedSubject">
+					@foreach (var subject in dict.GetValueOrDefault(int.Parse(pickedMajor)))
+					{
+						<MudSelectItem Value="@subject.Id.ToString()">@subject.Name</MudSelectItem>
+					}
+				</MudSelect>
+			}
+		</MudItem>
+	</MudGrid>
+
+    <MudDivider DividerType="DividerType.Middle" Class="my-6" />
+
+
+    @if(notes == null || filteredNotes == null)
+    {
+		<MudText Typo="Typo.h5">Jegyzetek betöltése...</MudText>
+	} 
+	else
+	{
+		@if (filteredNotes.Count == 0)
+		{
+			<MudText Typo="Typo.h5">Nincs találat...</MudText>
+
+			return;
+		}
+
+		@foreach (var note in filteredNotes)
+		{
+			<MudCard Outlined="true" Class="mb-3">
+                <MudGrid Class="pa-4">
+                    <MudItem xs="7">
+						<MudPaper Class="d-flex align-center mud-width-full" Elevation="0">
+							<MudText Typo="Typo.h6" @onclick="() => HandleNoteOpenClick(note)" Style="cursor: pointer">@note.Title</MudText>
+						</MudPaper>
+					</MudItem>
+					<MudItem xs="5">
+						<MudPaper Class="d-flex align-center justify-end mud-width-full" Elevation="0">
+							<MudText Typo="Typo.body2" @onclick="() => HandleUserPageClick(note)" Style="cursor: pointer">@note.UserId</MudText> &nbsp;•&nbsp;
+							<MudText Typo="Typo.body2">@note.UploadDate.ToShortDateString() </MudText> &nbsp;•&nbsp;
+							<MudText Typo="Typo.body2">@note.Major.Name</MudText> &nbsp;•&nbsp;
+							<MudText Typo="Typo.body2">@note.Subject.Name</MudText>
+						</MudPaper>
+					</MudItem>
+                </MudGrid>
+				<MudCardContent Class="py-0">
+					<MudCard Elevation="1" Class="py-1 px-2">
+						@((MarkupString)Markdig.Markdown.ToHtml(string.Join("\n", note.Content.Split("\n").Take(5))))
+					</MudCard>
+				</MudCardContent>
+				<MudCardActions>
+					<MudGrid Class="pa-4">
+						<MudItem xs="7">
+							<MudPaper Class="d-flex align-center mud-width-full" Elevation="0">
+								<MudRating Disabled SelectedValue="@Convert.ToInt32(note.Rating)" FullIcon="@Icons.Material.Filled.Favorite" EmptyIcon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Secondary" />
+								<MudText Typo="Typo.h6" Class="ml-2">@note.Rating / 5</MudText>
+							</MudPaper>
+						</MudItem>
+						<MudItem xs="5">
+							<MudPaper Class="d-flex align-center justify-end mud-width-full" Elevation="0">
+								<AuthorizeView>
+									@if(context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value == note.UserId)
+									{
+										<MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="() => HandleEditNoteClick(note)">Módosítás</MudButton>
+									}
+								</AuthorizeView>
+							</MudPaper>
+						</MudItem>
+					</MudGrid>
+				</MudCardActions>
+			</MudCard>
+		}
+    }
+
+	<MudPagination Class="mb-3" Color="Color.Primary" SelectedChanged="SelectedPageChanged" Count="@_totalPages"/>
+</MudContainer>
+
+
+
+@code {
+	public int _selectedPage = 1;
+	public int _totalPages = 1;
+
+	public string SearchTerm { get; set; } = "";
+	public const string Seperator = "• &nbsp;";
+
+	List<ListItemNoteDto>? notes = null;
+	List<ListItemNoteDto>? filteredNotes = null;
+
+	List<MajorDto>? majors = null;
+	List<SubjectDto>? subjects = null;
+	Dictionary<int, List<SubjectDto>> dict = new Dictionary<int, List<SubjectDto>>();
+	private string pickedMajor = "";
+	private string pickedSubject = "";
+
+	protected override async Task OnInitializedAsync()
+	{
+		_totalPages = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/notes/page-count");
+
+		notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"https://localhost:7031/api/notes/page/1");
+		filteredNotes = notes;
+
+		if (notes == null) return;
+
+		// Load Majors and Subjects
+		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
+
+		if (majors == null) return;
+
+		foreach (var major in majors)
+		{
+			subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
+
+			if (subjects == null) continue;
+
+			dict.Add(major.Id, subjects);
+		}
+	}
+
+	private async void SelectedPageChanged(int i)
+	{
+		_selectedPage = i;
+		await SearchAndFilter();
+	}
+
+	protected void HandleNoteOpenClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"viewnote/{note.Id}");
+	}
+
+	protected void HandleUserPageClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"userpage/{note.UserId}");
+	}
+
+	protected async void HandleMajorChanged(string major)
+	{
+		if(major == "Összes")
+		{
+			pickedMajor = "";
+			pickedSubject = "";
+			await SearchAndFilter();
+			return;
+		}
+
+		pickedMajor = major;
+		pickedSubject = "";
+
+		await SearchAndFilter();
+	}
+
+	protected async void HandleSubjectChanged(string subject)
+	{
+		pickedSubject = subject;
+
+		await SearchAndFilter();
+	}
+
+	protected void HandleEditNoteClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"editnote/{note.Id}");
+	}
+
+	protected async Task SearchAndFilter()
+	{
+		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"https://localhost:7031/api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
+		_totalPages = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/notes/page-count?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
+		StateHasChanged();
+
+		// if (notes == null) return;
+
+		// if (string.IsNullOrWhiteSpace(SearchTerm))
+		// {
+		// 	filteredNotes = notes;
+		// }
+		// else
+		// {
+		// 	filteredNotes = notes.Where(n => n.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+		// }
+
+		// if (pickedMajor != "" && pickedSubject != "")
+		// {
+		// 	filteredNotes = filteredNotes.Where(n => n.Major.Id == int.Parse(pickedMajor) && n.Subject.Id == int.Parse(pickedSubject)).ToList();
+		// }
+		// else if (pickedMajor != "")
+		// {
+		// 	filteredNotes = filteredNotes.Where(n => n.Major.Id == int.Parse(pickedMajor)).ToList();
+		// }
+	}
+}

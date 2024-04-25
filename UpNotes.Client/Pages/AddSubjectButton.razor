@@ -1,0 +1,26 @@
+﻿@inject NavigationManager NavigationManager
+
+
+@code {
+	[Parameter]
+	public int? majorId { get; set; }
+}
+
+
+<MudButton Variant="Variant.Filled" Color="Color.Success" Class="ma-3" @onclick="AddNewSubject">Tárgy hozzáadása</MudButton>
+
+
+@code {
+	void AddNewSubject()
+	{
+		if (majorId != null)
+		{
+			NavigationManager.NavigateTo($"/admin/editsubject/{majorId}");
+		} 
+		else 
+		{
+			NavigationManager.NavigateTo("/");
+		}
+		
+	}
+}

@@ -1,0 +1,30 @@
+﻿@inject NavigationManager NavigationManager
+
+@code {
+	[Parameter]
+	public required int majorId { get; set; }
+
+	[Parameter]
+	public required int subjectId { get; set; }
+
+	[Parameter]
+	public required string subjectName { get; set; }
+
+	[Parameter]
+	public required int subjectSemester { get; set; }
+}
+
+
+<tr style="cursor: pointer" @onclick="() => HandleRowClick(majorId, subjectId)">
+	<td>@subjectName</td>
+	<td>@subjectSemester</td>
+</tr>
+
+
+@code {
+	void HandleRowClick(int majorId, int subjectId)
+	{
+		Console.WriteLine("Row clicked: " + majorId);
+		NavigationManager.NavigateTo($"/admin/editsubject/{majorId}/{subjectId}");
+	}
+}
