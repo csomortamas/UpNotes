@@ -53,19 +53,22 @@ else {
 
 	protected override async Task OnInitializedAsync()
 	{
-		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
-
-		if(majors == null) return;
-
-		foreach(var major in majors)
+		if (Http.BaseAddress != null)
 		{
-			List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
+			majors = await Http.GetFromJsonAsync<List<MajorDto>>("api/majors");
 
-			if (subjects == null) continue;
+			if(majors == null) return;
 
-			dict.Add(major.Id, subjects);
+			foreach(var major in majors)
+			{
+				List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"api/subjects/major/{major.Id}");
+
+				if (subjects == null) continue;
+
+				dict.Add(major.Id, subjects);
+			}
+
+			dataLoaded = true;
 		}
-
-		dataLoaded = true;
 	}
 }

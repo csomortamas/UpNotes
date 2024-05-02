@@ -42,8 +42,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 // HTTP
 builder.Services.AddHttpClient();
 
-
-
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddMudServices();

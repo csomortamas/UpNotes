@@ -128,25 +128,30 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		_totalPages = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/notes/page-count");
-
-		notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"https://localhost:7031/api/notes/page/1");
-		filteredNotes = notes;
-
-		if (notes == null) return;
-
-		// Load Majors and Subjects
-		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
-
-		if (majors == null) return;
-
-		foreach (var major in majors)
+		if (Http.BaseAddress != null)
 		{
-			subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
 
-			if (subjects == null) continue;
+			_totalPages = await Http.GetFromJsonAsync<int>($"api/notes/page-count");
 
-			dict.Add(major.Id, subjects);
+			notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/page/1");
+			filteredNotes = notes;
+
+			if (notes == null) return;
+
+			// Load Majors and Subjects
+			majors = await Http.GetFromJsonAsync<List<MajorDto>>("api/majors");
+
+			if (majors == null) return;
+
+			foreach (var major in majors)
+			{
+				subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"api/subjects/major/{major.Id}");
+
+				if (subjects == null) continue;
+
+				dict.Add(major.Id, subjects);
+			}
+
 		}
 	}
 
@@ -196,8 +201,8 @@
 
 	protected async Task SearchAndFilter()
 	{
-		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"https://localhost:7031/api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
-		_totalPages = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/notes/page-count?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
+		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
+		_totalPages = await Http.GetFromJsonAsync<int>($"api/notes/page-count?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
 		StateHasChanged();
 
 		// if (notes == null) return;

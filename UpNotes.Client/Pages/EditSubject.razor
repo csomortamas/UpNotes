@@ -56,24 +56,27 @@
 	// init page
 	protected override async Task OnInitializedAsync()
 	{
-		major = await Http.GetFromJsonAsync<MajorDto>($"https://localhost:7031/api/majors/{majorId}");
-
-		if (major != null)
+		if (Http.BaseAddress != null)
 		{
-			majorName = major.Name;
-			mutableMajor = new MutableMajorDto(major);
-		}
+			major = await Http.GetFromJsonAsync<MajorDto>($"api/majors/{majorId}");
 
-		if (subjectId != null)
-		{
-			subject = await Http.GetFromJsonAsync<SubjectDto>($"https://localhost:7031/api/subjects/{subjectId}");
+			if (major != null)
+			{
+				majorName = major.Name;
+				mutableMajor = new MutableMajorDto(major);
+			}
 
-			if (subject == null)
+			if (subjectId != null)
 			{
-				NavigationManager.NavigateTo("/admin/managesubjects");
-			} else
-			{
-				mutableSubject = new MutableSubjectDto(subject);
+				subject = await Http.GetFromJsonAsync<SubjectDto>($"api/subjects/{subjectId}");
+
+				if (subject == null)
+				{
+					NavigationManager.NavigateTo("/admin/managesubjects");
+				} else
+				{
+					mutableSubject = new MutableSubjectDto(subject);
+				}
 			}
 		}
 	}
@@ -83,7 +86,7 @@
 	{
 		if (subjectId != null)
 		{
-			await Http.DeleteAsync($"https://localhost:7031/api/subjects/{subjectId}");
+			await Http.DeleteAsync($"api/subjects/{subjectId}");
 		}
 		NavigationManager.NavigateTo($"/admin/managesubjects");
 	}
@@ -95,11 +98,11 @@
 
 		if (subjectId == null)
 		{
-			await Http.PostAsJsonAsync($"https://localhost:7031/api/subjects/", insertSubject);
+			await Http.PostAsJsonAsync($"api/subjects/", insertSubject);
 		}
 		else
 		{
-			await Http.PutAsJsonAsync($"https://localhost:7031/api/subjects/{subjectId}", insertSubject);
+			await Http.PutAsJsonAsync($"api/subjects/{subjectId}", insertSubject);
 		}
 		NavigationManager.NavigateTo($"/admin/managesubjects");
 	}

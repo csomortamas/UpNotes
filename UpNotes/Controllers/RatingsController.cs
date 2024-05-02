@@ -26,6 +26,7 @@ namespace UpNotes.Controllers
 		public async Task<IActionResult> GetRating(int noteId)
 		{
 			var user = await _userManager.GetUserAsync(User);
+			Console.WriteLine(user);
 
 			if (user == null)
 			{

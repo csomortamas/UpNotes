@@ -140,19 +140,25 @@ else
 
 	protected override async Task OnInitializedAsync()
 	{
-		note = await Http.GetFromJsonAsync<ListItemNoteDto>($"https://localhost:7031/api/notes/full/{noteId}");
-
-		try {
-			myRating = await Http.GetFromJsonAsync<int>($"https://localhost:7031/api/ratings/{noteId}");
-		}
-		catch (Exception)
+		if (Http.BaseAddress != null)
 		{
-			myRating = 0;
+
+			note = await Http.GetFromJsonAsync<ListItemNoteDto>($"api/notes/full/{noteId}");
+
+			try
+			{
+				myRating = await Http.GetFromJsonAsync<int>($"api/ratings/{noteId}");
+			}
+			catch (Exception)
+			{
+				myRating = 0;
+			}
+
+			if (note == null) return;
+
+			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"api/comments/{noteId}");
+
 		}
-
-		if (note == null) return;
-
-		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
 	}
 
 	protected void HandleEditNoteClick(ListItemNoteDto note)
@@ -171,19 +177,19 @@ else
 			value
 		);
 
-		await Http.PostAsJsonAsync("https://localhost:7031/api/ratings", rating);
+		await Http.PostAsJsonAsync("api/ratings", rating);
 	}
 
 	protected async void HandleDeleteRatingClick()
 	{
-		await Http.DeleteAsync($"https://localhost:7031/api/ratings/{noteId}");
+		await Http.DeleteAsync($"api/ratings/{noteId}");
 		myRating = 0;
 		StateHasChanged();
 	}
 
 	protected async void HandleDeleteNoteClick(ListItemNoteDto note)
 	{
-		await Http.DeleteAsync($"https://localhost:7031/api/notes/{note.Id}");
+		await Http.DeleteAsync($"api/notes/{note.Id}");
 		NavigationManager.NavigateTo("/");
 	}
 
@@ -191,8 +197,8 @@ else
 	{
 		commentText = commentText.Trim();
 		if (commentText == "") return;
-		await Http.PostAsJsonAsync($"https://localhost:7031/api/comments/{noteId}", new InsertCommentDto(commentText, noteId));
-		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+		await Http.PostAsJsonAsync($"api/comments/{noteId}", new InsertCommentDto(commentText, noteId));
+		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"api/comments/{noteId}");
 		commentText = "";
 	}
 
@@ -205,8 +211,8 @@ else
 	{
 		try
 		{
-			await Http.PostAsJsonAsync($"https://localhost:7031/api/likes", new AddLikeOrDislikeDto(comment.Id, type));
-			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+			await Http.PostAsJsonAsync($"api/likes", new AddLikeOrDislikeDto(comment.Id, type));
+			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"api/comments/{noteId}");
 			StateHasChanged();
 		} 
 		catch (Exception)
@@ -219,8 +225,8 @@ else
 	{
 		try
 		{
-			await Http.DeleteAsync($"https://localhost:7031/api/likes/{comment.Id}");
-			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+			await Http.DeleteAsync($"api/likes/{comment.Id}");
+			comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"api/comments/{noteId}");
 			StateHasChanged();
 		} catch (Exception)
 		{
@@ -230,8 +236,8 @@ else
 
 	protected async void HandleDeleteCommentClick(ListItemCommentDto comment)
 	{
-		await Http.DeleteAsync($"https://localhost:7031/api/comments/{comment.Id}");
-		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"https://localhost:7031/api/comments/{noteId}");
+		await Http.DeleteAsync($"api/comments/{comment.Id}");
+		comments = await Http.GetFromJsonAsync<List<ListItemCommentDto>>($"api/comments/{noteId}");
 		StateHasChanged();
 	}
 }

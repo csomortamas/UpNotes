@@ -62,10 +62,16 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"https://localhost:7031/api/notes/user/{userId}");
+		if (Http.BaseAddress != null)
+		{
+			notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/user/{userId}");
+		}
+
 
 		if (notes == null) return;
 	}
+
+
 
 	protected void HandleNoteOpenClick(ListItemNoteDto note)
 	{

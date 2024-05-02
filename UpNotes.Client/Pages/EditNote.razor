@@ -114,38 +114,42 @@ else
 	// init page
 	protected override async Task OnInitializedAsync()
 	{
-		mutableNote = new MutableNoteDto { Title = string.Empty, Content = string.Empty};
+		mutableNote = new MutableNoteDto { Title = string.Empty, Content = string.Empty };
 
-		majors = await Http.GetFromJsonAsync<List<MajorDto>>("https://localhost:7031/api/majors");
-
-		if (majors == null) return;
-
-		foreach (var major in majors)
+		if (Http.BaseAddress != null)
 		{
-			List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"https://localhost:7031/api/subjects/major/{major.Id}");
 
-			if (subjects == null) continue;
+			majors = await Http.GetFromJsonAsync<List<MajorDto>>("api/majors");
 
-			dict.Add(major.Id, subjects);
-		}
+			if (majors == null) return;
 
-		dataLoaded = true;
-
-		// load note if id is present
-		if (noteId != null)
-		{
-			fetchedNote = await Http.GetFromJsonAsync<NoteDto>($"https://localhost:7031/api/notes/{noteId}");
-
-			if (fetchedNote != null)
+			foreach (var major in majors)
 			{
-				mutableNote = new MutableNoteDto(fetchedNote);
+				List<SubjectDto>? subjects = await Http.GetFromJsonAsync<List<SubjectDto>>($"api/subjects/major/{major.Id}");
 
-				SubjectDto? pickedSubjectDto = await Http.GetFromJsonAsync<SubjectDto>($"https://localhost:7031/api/subjects/{fetchedNote.SubjectId}");
+				if (subjects == null) continue;
 
-				if (pickedSubjectDto != null)
+				dict.Add(major.Id, subjects);
+			}
+
+			dataLoaded = true;
+
+			// load note if id is present
+			if (noteId != null)
+			{
+				fetchedNote = await Http.GetFromJsonAsync<NoteDto>($"api/notes/{noteId}");
+
+				if (fetchedNote != null)
 				{
-					pickedMajor = pickedSubjectDto.MajorId.ToString();
-					pickedSubject = fetchedNote.SubjectId.ToString();
+					mutableNote = new MutableNoteDto(fetchedNote);
+
+					SubjectDto? pickedSubjectDto = await Http.GetFromJsonAsync<SubjectDto>($"api/subjects/{fetchedNote.SubjectId}");
+
+					if (pickedSubjectDto != null)
+					{
+						pickedMajor = pickedSubjectDto.MajorId.ToString();
+						pickedSubject = fetchedNote.SubjectId.ToString();
+					}
 				}
 			}
 		}
@@ -165,11 +169,11 @@ else
 
 			if (noteId == null)
 			{
-				await Http.PostAsJsonAsync("https://localhost:7031/api/notes/", insertNote);
+				await Http.PostAsJsonAsync("api/notes/", insertNote);
 			}
 			else
 			{
-				await Http.PutAsJsonAsync($"https://localhost:7031/api/notes/{noteId}", insertNote);
+				await Http.PutAsJsonAsync($"api/notes/{noteId}", insertNote);
 			}
 
 			NavigationManager.NavigateTo("/");
@@ -178,7 +182,7 @@ else
 
 	protected async void HandleDeleteNoteClick(int noteId)
 	{
-		await Http.DeleteAsync($"https://localhost:7031/api/notes/{noteId}");
+		await Http.DeleteAsync($"api/notes/{noteId}");
 		NavigationManager.NavigateTo("/");
 	}
 

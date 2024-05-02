@@ -24,7 +24,6 @@
 @code {
 	void HandleRowClick(int majorId, int subjectId)
 	{
-		Console.WriteLine("Row clicked: " + majorId);
 		NavigationManager.NavigateTo($"/admin/editsubject/{majorId}/{subjectId}");
 	}
 }
