@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Linq;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UpNotes.Client.Dtos;
@@ -37,7 +38,8 @@ namespace UpNotes.Controllers
 									.Select(r => (double)r.Value)
 									.DefaultIfEmpty()
 									.Average()
-				));
+				))
+				.ToList();
 
 			return Ok(noteDtos);
 		}
