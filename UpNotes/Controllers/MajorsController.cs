@@ -22,7 +22,7 @@ namespace UpNotes.Controllers
 		[HttpGet]
 		public IActionResult GetAllMajors()
 		{
-			var majorsDto = _context.Majors.Select(m => new MajorDto(m.Id, m.Name, m.SemesterCount));
+			var majorsDto = _context.Majors.Select(m => new MajorDto(m.Id, m.Name, m.SemesterCount)).ToList();
 
 			return Ok(majorsDto);
 		}

@@ -71,7 +71,8 @@ namespace UpNotes.Controllers
 									.Select(r => (double)r.Value)
 									.DefaultIfEmpty()
 									.Average()
-			));
+			))
+			.ToList();
 
 			return Ok(noteDtos);
 		}
