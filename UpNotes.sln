@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UpNotes", "UpNotes\UpNotes.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UpNotes.Client", "UpNotes.Client\UpNotes.Client.csproj", "{746C962E-C3B6-4214-9FB5-0D4704DC632C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UpNotes.Tests", "UpNotes.Tests\UpNotes.Tests.csproj", "{D9370A18-FF12-4EB8-A7DD-D042683EB967}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{746C962E-C3B6-4214-9FB5-0D4704DC632C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{746C962E-C3B6-4214-9FB5-0D4704DC632C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{746C962E-C3B6-4214-9FB5-0D4704DC632C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9370A18-FF12-4EB8-A7DD-D042683EB967}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9370A18-FF12-4EB8-A7DD-D042683EB967}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9370A18-FF12-4EB8-A7DD-D042683EB967}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9370A18-FF12-4EB8-A7DD-D042683EB967}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
