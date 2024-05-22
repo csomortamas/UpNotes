@@ -34,9 +34,30 @@ jobs:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-  deploy:
+
+  test:
     runs-on: ubuntu-latest
     needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.x'
+          include-prerelease: true
+
+      - name: Restore dependencies
+        run: dotnet restore UpNotes.Tests/UpNotes.Tests.csproj
+
+      - name: Run tests
+        run: dotnet test UpNotes.Tests/UpNotes.Tests.csproj --configuration Release
+    
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, test]
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
