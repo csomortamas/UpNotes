@@ -204,25 +204,5 @@
 		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
 		_totalPages = await Http.GetFromJsonAsync<int>($"api/notes/page-count?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
 		StateHasChanged();
-
-		// if (notes == null) return;
-
-		// if (string.IsNullOrWhiteSpace(SearchTerm))
-		// {
-		// 	filteredNotes = notes;
-		// }
-		// else
-		// {
-		// 	filteredNotes = notes.Where(n => n.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
-		// }
-
-		// if (pickedMajor != "" && pickedSubject != "")
-		// {
-		// 	filteredNotes = filteredNotes.Where(n => n.Major.Id == int.Parse(pickedMajor) && n.Subject.Id == int.Parse(pickedSubject)).ToList();
-		// }
-		// else if (pickedMajor != "")
-		// {
-		// 	filteredNotes = filteredNotes.Where(n => n.Major.Id == int.Parse(pickedMajor)).ToList();
-		// }
 	}
 }

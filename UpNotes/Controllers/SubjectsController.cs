@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using UpNotes.Client.Dtos;
 using UpNotes.Data;
@@ -8,7 +9,7 @@ namespace UpNotes.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
-	public class SubjectsController : ControllerBase
+    public class SubjectsController : ControllerBase
 	{
 		private readonly ApplicationDbContext _context;
 		private readonly UserManager<ApplicationUser> _userManager;
@@ -62,7 +63,8 @@ namespace UpNotes.Controllers
 
 		// DELETE SUBJECT
 		[HttpDelete("{id}")]
-		public IActionResult DeleteSubject(int id)
+        [Authorize(Roles = "ADMIN")]
+        public IActionResult DeleteSubject(int id)
 		{
 			var subject = _context.Subjects.SingleOrDefault(s => s.Id == id);
 
@@ -79,7 +81,8 @@ namespace UpNotes.Controllers
 
 		// UPDATE SUBJECT
 		[HttpPut("{id}")]
-		public IActionResult UpdateSubject(int id, [FromBody] InsertSubjectDto insertSubjectDto)
+        [Authorize(Roles = "ADMIN")]
+        public IActionResult UpdateSubject(int id, [FromBody] InsertSubjectDto insertSubjectDto)
 		{
 			var subject = _context.Subjects.SingleOrDefault(s => s.Id == id);
 
@@ -99,7 +102,8 @@ namespace UpNotes.Controllers
 
 		// INSERT SUBJECT
 		[HttpPost]
-		public IActionResult InsertSubject([FromBody] InsertSubjectDto insertSubjectDto)
+        [Authorize(Roles = "ADMIN")]
+        public IActionResult InsertSubject([FromBody] InsertSubjectDto insertSubjectDto)
 		{
 			var subject = new Subject
 			{

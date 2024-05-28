@@ -20,22 +20,6 @@ namespace UpNotes.Controllers
 			_userManager = userManager;
 		}
 
-		// GET LIKES FOR A COMMENT
-		//[HttpGet("{commentId}")]
-		//public IActionResult GetLikesForComment(int commentId)
-		//{
-		//	var likes = _context.Likes.Where(l => l.CommentId == commentId);
-
-		//	var likesOnCommentDto = new LikesOnCommentDto(
-		//			commentId,
-		//			likes.Where(l => l.Type == "Like").Count(),
-		//			likes.Where(l => l.Type == "Dislike").Count()
-		//		);
-
-		//	return Ok();
-		//}
-
-		// GET LIKE FOR COMMENT BY USER
 		[HttpGet("{commentId}")]
 		public async Task<IActionResult> GetUserLikeOrDislikeAsync(int commentId)
 		{

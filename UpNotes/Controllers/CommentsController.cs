@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using UpNotes.Client.Dtos;
+using Microsoft.AspNetCore.Mvc;
 using UpNotes.Data;
 using UpNotes.Entities;
 
