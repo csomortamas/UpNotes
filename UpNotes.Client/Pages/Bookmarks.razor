@@ -1,0 +1,78 @@
+﻿@page "/bookmarks"
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+<AuthorizeView>
+
+</AuthorizeView>
+
+<MudContainer>
+	<MudText Typo="Typo.h3" Class="mb-3">Mentett jegyzeteid</MudText>
+
+	@if (notes == null)
+	{
+		<MudText Typo="Typo.h5">Jegyzetek betöltése...</MudText>
+	}
+	else if (notes.Count == 0)
+	{
+		<MudText Typo="Typo.h5">Nincs mentett jegyzet...</MudText>
+	}
+	else
+	{
+		@foreach (var note in notes)
+		{
+			<MudCard Outlined="true" Class="mb-3">
+				<MudGrid Class="pa-4">
+					<MudItem xs="7">
+						<MudPaper Class="d-flex align-center mud-width-full" Elevation="0">
+							<MudText Typo="Typo.h6" @onclick="() => HandleNoteOpenClick(note)" Style="cursor: pointer">@note.Title</MudText>
+						</MudPaper>
+					</MudItem>
+					<MudItem xs="5">
+						<MudPaper Class="d-flex align-center justify-end mud-width-full" Elevation="0">
+							<MudText Typo="Typo.body2">@note.UserId</MudText> &nbsp;•&nbsp;
+							<MudText Typo="Typo.body2">@note.UploadDate.ToShortDateString() </MudText> &nbsp;•&nbsp;
+							<MudText Typo="Typo.body2">@note.Major.Name</MudText>
+						</MudPaper>
+					</MudItem>
+				</MudGrid>
+				<MudCardContent Class="py-0">
+					<MudCard Elevation="1" Class="py-1 px-2">
+						@((MarkupString)Markdig.Markdown.ToHtml(string.Join("\n", note.Content.Split("\n").Take(5))))
+					</MudCard>
+				</MudCardContent>
+				<MudCardActions>
+					<MudGrid Class="pa-4">
+						<MudItem xs="7">
+							<MudPaper Class="d-flex align-center mud-width-full" Elevation="0">
+								<MudRating Disabled SelectedValue="@Convert.ToInt32(note.Rating)" FullIcon="@Icons.Material.Filled.Favorite" EmptyIcon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Secondary" />
+							</MudPaper>
+						</MudItem>
+					</MudGrid>
+				</MudCardActions>
+			</MudCard>
+		}
+	}
+</MudContainer>
+
+
+@code {
+	List<ListItemNoteDto>? notes = null;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (Http.BaseAddress != null)
+		{
+			notes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>("api/notes/bookmarked-notes");
+		}
+
+		if (notes == null) return;
+	}
+
+
+
+	protected void HandleNoteOpenClick(ListItemNoteDto note)
+	{
+		NavigationManager.NavigateTo($"viewnote/{note.Id}");
+	}
+}

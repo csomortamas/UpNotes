@@ -261,5 +261,36 @@ namespace UpNotes.Controllers
 
 			return Ok();
 		}
+
+		// GET NOTES BY USER BOOKMARKS
+		[HttpGet("bookmarked-notes")]
+		public async Task<IActionResult> GetNotesByUserBookmarksAsync()
+		{
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+			{
+                return Unauthorized();
+            }
+
+            var noteDtos = _context.Bookmarks
+                .Where(b => b.UserId == user.Id)
+                .Select(b => new ListItemNoteDto(
+					b.Note.Id,
+					b.Note.Title,
+					b.Note.Content,
+					b.Note.UploadDate,
+					b.Note.UserId,
+					new SubjectDto(b.Note.Subject.Id, b.Note.Subject.Name, b.Note.Subject.SemesterNumber, b.Note.Subject.MajorId),
+					new MajorDto(b.Note.Subject.Major.Id, b.Note.Subject.Major.Name, b.Note.Subject.Major.SemesterCount),
+					_context.Ratings.Where(r => r.NoteId == b.Note.Id)
+									.Select(r => (double)r.Value)
+									.DefaultIfEmpty()
+									.Average()
+				))
+                .ToList();
+
+            return Ok(noteDtos);
+        }	
 	}
 }

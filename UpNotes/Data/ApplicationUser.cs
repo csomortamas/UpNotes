@@ -10,6 +10,7 @@ namespace UpNotes.Data
 		public List<Like> Likes { get; set; }
 		public List<Comment> Comments { get; set; }
 		public List<Note> Notes { get; set; }
+		public List<Bookmark> Bookmarks { get; set; }
 	}
 
 }

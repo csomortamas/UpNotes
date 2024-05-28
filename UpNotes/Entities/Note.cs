@@ -14,5 +14,6 @@ namespace UpNotes.Entities
 		public Subject Subject { get; set; }
 		public List<Comment> Comments { get; set; }
 		public List<Rating> Ratings { get; set; }
+		public List<Bookmark> Bookmarks { get; set; }
 	}
 }

@@ -41,6 +41,19 @@ else
 
 							<AuthorizeView>
 								<MudText Align="Align.Center">
+									@if (isBookmarked)
+									{
+										<MudIcon Icon="@Icons.Material.Filled.BookmarkAdded" Class="mx-1" Style="font-size: 2rem; cursor: pointer" @onclick=HandleRemoveBookmarkClick />
+									}
+									else
+									{
+										<MudIcon Icon="@Icons.Material.Outlined.BookmarkAdd" Class="mx-1" Style="font-size: 2rem; cursor: pointer" @onclick=HandleAddBookmarkClick />
+									}
+								</MudText>
+							</AuthorizeView>
+
+							<AuthorizeView>
+								<MudText Align="Align.Center">
 									<MudRating SelectedValueChanged="HandleRatingValueChanged" SelectedValue="@myRating" Class="mt-3" FullIcon="@Icons.Material.Filled.Favorite" EmptyIcon="@Icons.Material.Filled.FavoriteBorder" Color="Color.Secondary" />
 									@if(@myRating != 0)
 									{
@@ -78,12 +91,14 @@ else
 													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Color="Color.Error" Style="font-size: 1rem; cursor: pointer" @onclick='() => DeleteLikeOrDislikeClick(comment)' />
 													@comment.DislikeCount
 													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Dislike")' />
-												} else if (comment.LikeByLoggedInUser == "Dislike")
+												} 
+												else if (comment.LikeByLoggedInUser == "Dislike")
 												{
 													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Like")' />
 													@comment.DislikeCount
 													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Color="Color.Error" Style="font-size: 1rem; cursor: pointer" @onclick='() => DeleteLikeOrDislikeClick(comment)' />
-												} else {
+												} 
+												else {
 													<MudIcon Icon="@Icons.Material.Filled.ThumbUp" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Like")' />
 													@comment.DislikeCount
 													<MudIcon Icon="@Icons.Material.Filled.ThumbDown" Class="mx-1" Style="font-size: 1rem; cursor: pointer" @onclick='() => AddLikeOrDislikeClick(comment, "Dislike")' />
@@ -106,11 +121,6 @@ else
 										<MudTextField T="string" Label="Komment hozzáadása" Variant="Variant.Filled" @bind-Value="@commentText" For="@(() => @commentText)" Lines="3" Class="mb-2" />
 										<MudCardActions>
 											<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Success">Publikálás</MudButton>
-
-											@if (false)
-											{
-												<MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Error" Class="ml-3">Törlés</MudButton>
-											}
 										</MudCardActions>
 									</EditForm>
 								</MudPaper>
@@ -133,7 +143,8 @@ else
 	public string commentText { get; set; } = "";
 
 	public int myRating { get; set; } = 0;
-	// public int myLikes { get; set; } = 0;
+
+	public bool isBookmarked { get; set; } = false;
 
 	ListItemNoteDto? note = null;
 	List<ListItemCommentDto>? comments = null;
@@ -153,6 +164,8 @@ else
 			{
 				myRating = 0;
 			}
+
+			isBookmarked = await Http.GetFromJsonAsync<bool>($"api/bookmarks/{noteId}");
 
 			if (note == null) return;
 
@@ -217,7 +230,7 @@ else
 		} 
 		catch (Exception)
 		{
-			// redirect to login
+			NavigationManager.NavigateTo("/Account/Login");
 		}
 	}
 
@@ -230,8 +243,26 @@ else
 			StateHasChanged();
 		} catch (Exception)
 		{
-			// redirect to login
+			NavigationManager.NavigateTo("/Account/Login");
 		}
+	}
+
+	protected async void HandleAddBookmarkClick()
+	{
+		var res = await Http.PostAsync($"api/bookmarks/{noteId}", null);
+
+		if (res.StatusCode == System.Net.HttpStatusCode.OK) isBookmarked = true;
+
+		StateHasChanged();
+	}
+
+	protected async void HandleRemoveBookmarkClick()
+	{
+		var res = await Http.DeleteAsync($"api/bookmarks/{noteId}");
+		
+		if (res.StatusCode == System.Net.HttpStatusCode.OK) isBookmarked = false;
+
+		StateHasChanged();
 	}
 
 	protected async void HandleDeleteCommentClick(ListItemCommentDto comment)

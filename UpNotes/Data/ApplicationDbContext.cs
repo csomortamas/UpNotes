@@ -15,5 +15,6 @@ namespace UpNotes.Data
 		public DbSet<Comment> Comments { get; set; }
 		public DbSet<Rating> Ratings { get; set; }
 		public DbSet<Like> Likes { get; set; }
+		public DbSet<Bookmark> Bookmarks { get; set; }
 	}
 }
