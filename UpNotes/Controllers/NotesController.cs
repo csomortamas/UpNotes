@@ -49,13 +49,39 @@ namespace UpNotes.Controllers
 			[FromRoute] int page,
 			[FromQuery] string? searchTerm,
 			[FromQuery] int? subjectId,
-			[FromQuery] int? majorId)
+			[FromQuery] int? majorId,
+			[FromQuery] string? sortMethod)
 		{
-			var noteDtos = _context.Notes
+			var baseQuery = _context.Notes
 				.Where(n =>
 					(searchTerm == null || n.Title.Contains(searchTerm))
 					&& (subjectId == null || n.SubjectId == subjectId)
-					&& (majorId == null || n.Subject.MajorId == majorId))
+					&& (majorId == null || n.Subject.MajorId == majorId)).AsQueryable();
+
+			if (sortMethod == "ertekeles_desc" || sortMethod == null)
+			{
+				baseQuery = baseQuery.OrderByDescending(n => _context.Ratings.Where(r => r.NoteId == n.Id)
+							.Select(r => (double)r.Value)
+							.DefaultIfEmpty()
+							.Average()).AsQueryable();
+			}
+			else if (sortMethod == "ertekeles_asc")
+			{
+				baseQuery = baseQuery.OrderBy(n => _context.Ratings.Where(r => r.NoteId == n.Id)
+							.Select(r => (double)r.Value)
+							.DefaultIfEmpty()
+							.Average()).AsQueryable();
+			}
+			else if (sortMethod == "datum_desc")
+			{
+				baseQuery = baseQuery.OrderByDescending(n => n.UploadDate).AsQueryable();
+			}
+			else if (sortMethod == "datum_asc")
+			{
+				baseQuery = baseQuery.OrderBy(n => n.UploadDate).AsQueryable();
+			}
+
+			var noteDtos = baseQuery
 				.Skip((page - 1) * 5)
 				.Take(5)
 				.Select(n => new ListItemNoteDto(
@@ -70,8 +96,8 @@ namespace UpNotes.Controllers
 									.Select(r => (double)r.Value)
 									.DefaultIfEmpty()
 									.Average()
-			))
-			.ToList();
+				))
+				.ToList();
 
 			return Ok(noteDtos);
 		}

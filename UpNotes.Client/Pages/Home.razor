@@ -6,7 +6,25 @@
 
 
 <MudContainer>
-	<MudTextField DebounceInterval="300" OnDebounceIntervalElapsed="SearchAndFilter" @bind-Value="SearchTerm" Label="Keresés" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" />
+
+	<MudGrid>
+		<MudItem xs="9">
+			<MudTextField DebounceInterval="300" OnDebounceIntervalElapsed="SearchAndFilter" @bind-Value="SearchTerm" Label="Keresés" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" />
+		</MudItem>
+		<MudItem xs="3">
+			<MudItem xs=12>
+				<MudSelect Dense="true" T="string" Label="Rendezés" Variant="Variant.Filled" ValueChanged="HandleSortingChanged" Value="@sortMethod">
+					<MudSelectItem Value="@("ertekeles_desc")">Értékelés szerint csökkenő</MudSelectItem>
+					<MudSelectItem Value="@("ertekeles_asc")">Értékelés szerint növekvő</MudSelectItem>
+					<MudSelectItem Value="@("datum_desc")">Dátum szerint csökkenő</MudSelectItem>
+					<MudSelectItem Value="@("datum_asc")">Dátum szerint növekvő</MudSelectItem>
+				</MudSelect>
+			</MudItem>
+		</MudItem>
+	</MudGrid>
+
+
+
 
 	<MudGrid>
  		<MudItem xs="6">
@@ -115,6 +133,7 @@
 	public int _totalPages = 1;
 
 	public string SearchTerm { get; set; } = "";
+	public string sortMethod = "ertekeles_desc";
 	public const string Seperator = "• &nbsp;";
 
 	List<ListItemNoteDto>? notes = null;
@@ -194,6 +213,13 @@
 		await SearchAndFilter();
 	}
 
+	protected async void HandleSortingChanged(string sortMethodState)
+	{
+		sortMethod = sortMethodState;
+
+		await SearchAndFilter();
+	}
+
 	protected void HandleEditNoteClick(ListItemNoteDto note)
 	{
 		NavigationManager.NavigateTo($"editnote/{note.Id}");
@@ -201,7 +227,7 @@
 
 	protected async Task SearchAndFilter()
 	{
-		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
+		filteredNotes = await Http.GetFromJsonAsync<List<ListItemNoteDto>>($"api/notes/page/{_selectedPage}?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}&sortMethod={sortMethod}");
 		_totalPages = await Http.GetFromJsonAsync<int>($"api/notes/page-count?searchTerm={SearchTerm}&majorId={pickedMajor}&subjectId={pickedSubject}");
 		StateHasChanged();
 	}
